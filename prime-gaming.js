@@ -28,6 +28,14 @@ const context = await chromium.launchPersistentContext(cfg.dir.browser, {
   ],
 });
 
+// Turn off the passkeys
+await context.addInitScript(() => {
+  if (navigator.credentials) {
+    navigator.credentials.create = async () => Promise.reject(new Error('Passkeys disabled by automation'));
+    navigator.credentials.get = async () => Promise.reject(new Error('Passkeys disabled by automation'));
+  }
+});
+
 handleSIGINT(context);
 
 if (!cfg.debug) context.setDefaultTimeout(cfg.timeout);
@@ -55,18 +63,26 @@ try {
     const email = cfg.pg_email || await prompt({ message: 'Enter email' });
     const password = email && (cfg.pg_password || await prompt({ type: 'password', message: 'Enter password' }));
     if (email && password) {
-      await page.fill('[name=email]', email);
-      await page.click('input[type="submit"]');
-      await page.fill('[name=password]', password);
+      await page.waitForSelector('#ap_email, [name=email]', { state: 'visible', timeout: 15000 });
+      await page.locator('#ap_email, [name=email]').first().fill(email);
+      await page.click('input[type="submit"], #continue');
+
+      await page.waitForSelector('#ap_password, [name=password]', { state: 'visible', timeout: 15000 });
+      await page.locator('#ap_password, [name=password]').first().fill(password);
       // await page.check('[name=rememberMe]'); // no longer exists
-      await page.click('input[type="submit"]');
+      await page.click('#signInSubmit');
       page.waitForURL('**/ap/signin**').then(async () => { // check for wrong credentials
-        const error = await page.locator('.a-alert-content').first().innerText();
-        if (!error.trim.length) return;
-        console.error('Login error:', error);
-        await notify(`prime-gaming: login: ${error}`);
-        await context.close(); // finishes potential recording
-        process.exit(1);
+        try {
+          await page.waitForSelector('.a-alert-content', { state: 'visible', timeout: 5000 });
+          const error = await page.locator('.a-alert-content').first().innerText();
+          if (!error.trim().length) return;
+          console.error('Login error:', error);
+          await notify(`prime-gaming: login: ${error}`);
+          await context.close(); // finishes potential recording
+          process.exit(1);
+        } catch (e) {
+          // No error or page successfully navigated away
+        }
       });
       // handle MFA, but don't await it
       page.waitForURL('**/ap/mfa**').then(async () => {
@@ -85,7 +101,21 @@ try {
         process.exit(1);
       }
     }
-    await page.waitForURL(`${BASE_URL}/claims/home?signedIn=true`);
+
+    // Instead of getting stuck expecting a signedIn=true URL, wait for the page to navigate back
+    // or wait a moment for the Sign in / Avatar button to appear so the loop can re-evaluate.
+    try {
+      await Promise.any([
+        page.waitForURL(url => url.toString().includes('/claims/home')),
+        page.locator('[data-a-target="user-dropdown-first-name-text"]').waitFor({ state: 'visible' }),
+        page.waitForTimeout(5000) // Fallback timeout to unblock the loop and check the DOM
+      ]);
+      await page.waitForTimeout(2000); // Give the DOM a moment to update components
+      if (!page.url().includes('signin') && !page.url().includes('claims/home')) {
+        await page.goto(URL_CLAIM, { waitUntil: 'domcontentloaded' });
+      }
+    } catch (e) { }
+
     if (!cfg.debug) context.setDefaultTimeout(cfg.timeout);
   }
   user = await page.locator('[data-a-target="user-dropdown-first-name-text"]').first().innerText();
