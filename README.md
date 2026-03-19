@@ -55,7 +55,6 @@ cd free-games-claimer
 # (Optional: Edit the docker-compose.yml file here to your needs)
 docker compose up -d --build
 ```
-```
 
 _This currently gives you a captcha challenge for epic-games. Until [issue #183](https://github.com/vogler/free-games-claimer/issues/183) is fixed, it is recommended to just run `node epic-games` without Docker on a desktop machine (not headless, see below)._
 
