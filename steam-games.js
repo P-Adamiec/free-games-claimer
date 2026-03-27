@@ -266,8 +266,15 @@ async function claimGiveaway(giveaway) {
   console.log(`\nProcessing: ${giveawayUrl}`);
 
   // Navigate to giveaway URL (will redirect to Steam)
-  await page.goto(giveawayUrl, { waitUntil: 'domcontentloaded' });
-  const steamUrl = page.url();
+  let steamUrl;
+  try {
+    await page.goto(giveawayUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    steamUrl = page.url();
+  } catch (err) {
+    console.log(`Failed to navigate to giveaway URL (e.g. adblocker blocked tracker): ${err.message}`);
+    markGameAsClaimed(giveawayUrl, giveawayUrl, null, null, 'blocked_or_timeout');
+    return;
+  }
 
   // Check if it redirected to a Steam app page
   if (!steamUrl.includes("store.steampowered.com/app") && !steamUrl.includes("store.steampowered.com/agecheck/app")) {
