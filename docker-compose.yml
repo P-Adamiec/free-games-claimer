@@ -49,6 +49,7 @@ services:
       # - PG_PASSWORD=
       # - PG_OTPKEY=            # MFA/2FA Key
       # - PG_REDEEM=0           # 1 = Try to redeem keys in external stores (experimental)
+      # - PG_REDEEM_JSON=1   # 1 = Retroactively redeem unclaimed GOG codes
       # - PG_CLAIMDLC=0         # 1 = Also claim DLCs (experimental)
       
       # GOG (Overrides default)

@@ -257,57 +257,130 @@ try {
         console.log('  URL to redeem game:', redeem_url);
         db.data[user][title].code = code;
         let redeem_action = 'redeem';
-        if (cfg.pg_redeem) { // try to redeem keys on external stores
-          console.log(`  Trying to redeem ${code} on ${store} (need to be logged in)!`);
+        
+        async function redeemGogCode(context, code, title, user, db, notify_game) {
           const page2 = await context.newPage();
-          await page2.goto(redeem[store], { waitUntil: 'domcontentloaded' });
-          if (store == 'gog.com') {
-            // await page.goto(`https://redeem.gog.com/v1/bonusCodes/${code}`); // {"reason":"Invalid or no captcha"}
-            await page2.fill('#codeInput', code);
-            // wait for responses before clicking on Continue and then Redeem
-            // first there are requests with OPTIONS and GET to https://redeem.gog.com/v1/bonusCodes/XYZ?language=de-DE
-            const r1 = page2.waitForResponse(r => r.request().method() == 'GET' && r.url().startsWith('https://redeem.gog.com/'));
-            await page2.click('[type="submit"]'); // click Continue
-            // console.log(await page2.locator('.warning-message').innerText()); // does not exist if there is no warning
-            const r1t = await (await r1).text();
-            const r1j = JSON.parse(r1t);
-            const reason = r1j.reason;
-            // {"reason":"Invalid or no captcha"}
-            // {"reason":"code_used"}
-            // {"reason":"code_not_found"}
-            if (reason?.includes('captcha')) {
-              redeem_action = 'redeem (got captcha)';
-              console.error('  Got captcha; could not redeem!');
-            } else if (reason == 'code_used') {
-              redeem_action = 'already redeemed';
-              console.log('  Code was already used!');
-            } else if (reason == 'code_not_found') {
-              redeem_action = 'redeem (not found)';
-              console.error('  Code was not found!');
-            } else { // TODO not logged in? need valid unused code to test.
-              console.log('  Redeeming', r1j.products[0].title);
-              redeem_action = 'redeemed?';
-              // then after the click on Redeem there is a POST request which returns json
-              // POST https://redeem.gog.com/v1/bonusCodes/XYZ {productIds: ["1408290682"]}
-              const r2 = page2.waitForResponse(r => r.request().method() == 'POST' && r.url().startsWith('https://redeem.gog.com/'));
-              await page2.click('[type="submit"]'); // click Redeem
-              const r2t = await (await r2).text();
-              const r2j = JSON.parse(r2t);
-              // {"type":"async_processing","checkoutUrl":null}
-              if (r2j?.type == 'async_processing') {
-                await page2.locator('h1:has-text("Code redeemed successfully!")').waitFor();
-                redeem_action = 'redeemed';
-                console.log('  Redeemed successfully.');
-                db.data[user][title].status = 'claimed and redeemed';
-              } else if (r2j?.reason2?.includes('captcha')) {
-                redeem_action = 'redeem (got captcha)';
-                console.error('  Got captcha; could not redeem!');
+          let redeem_action = 'redeem';
+          try {
+            let networkErrorReason = null;
+            page2.on('response', async (r) => {
+              if (r.url().startsWith('https://redeem.gog.com/')) {
+                try {
+                  const text = await r.text();
+                  const json = JSON.parse(text);
+                  if (json.reason?.includes('captcha') || json.reason2?.includes('captcha')) networkErrorReason = 'captcha';
+                  else if (json.reason === 'code_used' || json.reason2 === 'code_used') networkErrorReason = 'code_used';
+                  else if (json.reason === 'code_not_found' || json.reason2 === 'code_not_found') networkErrorReason = 'code_not_found';
+                } catch (e) { /* ignore parse errors */ }
+              }
+            });
+
+            await page2.goto(`https://www.gog.com/redeem/${code}`, { waitUntil: 'networkidle' });
+
+            // Check if we were redirected to the login page
+            if (page2.url().startsWith('https://login.gog.com/')) {
+              console.error('  Not logged in to GOG!');
+              if (cfg.gog_email && cfg.gog_password) {
+                 console.info('  Attempting auto-login using GOG_EMAIL and GOG_PASSWORD...');
+                 await page2.locator('#login_username').fill(cfg.gog_email);
+                 await page2.locator('#login_password').fill(cfg.gog_password);
+                 await page2.locator('#login_login').click();
+                 
+                 console.info('  Waiting for redirect back to redeem page (solve 2FA in VNC if needed)...');
+                 try {
+                     await page2.waitForURL('**/redeem/**', { timeout: 60000 });
+                 } catch (e) {
+                     console.error('  Auto-login timed out or requires 2FA (check VNC).');
+                 }
               } else {
-                console.debug(`  Response 1: ${r1t}`);
-                console.debug(`  Response 2: ${r2t}`);
-                console.log('  Unknown Response 2 - please report in https://github.com/vogler/free-games-claimer/issues/5');
+                 console.info('  Waiting up to 60 seconds for manual login in the browser...');
+                 try {
+                     await page2.waitForURL('**/redeem/**', { timeout: 60000 });
+                 } catch (e) {
+                     console.error('  Manual login timed out.');
+                 }
+              }
+
+              // Ensure we are back on the redeem page now
+              if (!page2.url().includes('/redeem/')) {
+                  await page2.goto(`https://www.gog.com/redeem/${code}`, { waitUntil: 'networkidle' });
               }
             }
+
+            const continueBtn = page2.locator('button[type="submit"].button.primary:has-text("Continue")').first();
+            try {
+                await continueBtn.waitFor({ state: 'visible', timeout: 5000 });
+                const validationResponse = page2.waitForResponse(r => r.request().method() === 'GET' && r.url().startsWith('https://redeem.gog.com/'), { timeout: 10000 }).catch(() => null);
+                await continueBtn.click();
+                await validationResponse;
+            } catch (e) { }
+
+            await page2.waitForTimeout(1000);
+
+            // Sprawdzamy też UI czy GOG nie wstrzyknął błędu na ekranie
+            const warningEl = await page2.locator('.warning-message').first();
+            if (await warningEl.isVisible()) {
+                const warningText = await warningEl.innerText();
+                if (warningText.toLowerCase().includes('already used')) networkErrorReason = 'code_used';
+            }
+
+            if (networkErrorReason === 'captcha') {
+              console.error('  Got captcha; could not redeem!');
+              redeem_action = 'redeem (got captcha)';
+              db.data[user][title].status = 'unclaimed';
+            } else if (networkErrorReason === 'code_used') {
+              console.log('  Code was already used!');
+              redeem_action = 'already redeemed';
+              db.data[user][title].status = 'already used';
+            } else if (networkErrorReason === 'code_not_found') {
+              console.error('  Code was not found!');
+              redeem_action = 'redeem (not found)';
+              db.data[user][title].status = 'unclaimed';
+            } else {
+              const redeemBtn = page2.locator('button[type="submit"].button.primary:has-text("Redeem")').first();
+              await redeemBtn.waitFor({ state: 'visible', timeout: 15000 });
+              console.log('  Clicking Redeem button...');
+              
+              const redeemResponse = page2.waitForResponse(r => r.request().method() === 'POST' && r.url().startsWith('https://redeem.gog.com/'), { timeout: 15000 }).catch(() => null);
+              await redeemBtn.click();
+              await redeemResponse;
+
+              if (networkErrorReason === 'captcha') {
+                console.error('  Got captcha during final redeem; could not claim!');
+                redeem_action = 'redeem (got captcha)';
+                db.data[user][title].status = 'unclaimed';
+              } else if (networkErrorReason === 'code_used') {
+                console.log('  Code was already used at final step!');
+                redeem_action = 'already redeemed';
+                db.data[user][title].status = 'already used';
+              } else {
+                await page2.waitForSelector('.success-message', { state: 'visible', timeout: 15000 });
+                redeem_action = 'redeemed';
+                console.log('  Redeemed successfully.');
+                db.data[user][title].status = 'claimed and redeemed'; 
+              }
+            }
+          } catch (err) {
+            console.error('  Failed to redeem GOG code:', err.message);
+            redeem_action = 'failed to redeem';
+            if (db.data[user][title].status !== 'already used') {
+              db.data[user][title].status = 'unclaimed'; 
+            }
+          } finally {
+            if (cfg.debug) await page2.pause();
+            await page2.close();
+          }
+
+          if (notify_game) {
+              notify_game.status = `<a href="https://www.gog.com/redeem/${code}">${redeem_action}</a> ${code} on gog.com`;
+          }
+        }
+
+        if (cfg.pg_redeem) { // try to redeem keys on external stores
+          console.log(`  Trying to redeem ${code} on ${store} (need to be logged in)!`);
+          if (store == 'gog.com') {
+            await redeemGogCode(context, code, title, user, db, notify_game);
+            continue; 
           } else if (store == 'microsoft store' || store == 'xbox') {
             console.error(`  Redeem on ${store} is experimental!`);
             // await page2.pause();
@@ -465,6 +538,18 @@ try {
     }
     console.log('DLC: Unlinked accounts:', dlc_unlinked);
   }
+
+  // Retroactively claim previously stored GOG codes if requested
+  if (cfg.pg_redeem_old_gog) {
+    console.log('\nChecking for previously unclaimed GOG codes in database...');
+    for (const [t, entry] of Object.entries(db.data[user])) {
+      if (entry.store === 'gog.com' && entry.status === 'claimed' && entry.code) {
+        console.log(`Retroactively attempting to redeem: ${t} (${entry.code})`);
+        await redeemGogCode(context, entry.code, t, user, db, null);
+      }
+    }
+  }
+
 } catch (error) {
   process.exitCode ||= 1;
   console.error('--- Exception:');

@@ -52,6 +52,7 @@ export const cfg = {
   // OTP only via GOG_EMAIL, can't add app...
   // experimmental
   pg_redeem: process.env.PG_REDEEM == '1', // prime-gaming: redeem keys on external stores
+  pg_redeem_old_gog: process.env.PG_REDEEM_JSON == '1', // prime-gaming: retroactively redeem unclaimed GOG codes
   lg_email: process.env.LG_EMAIL || process.env.PG_EMAIL || process.env.EMAIL, // prime-gaming: external: legacy-games: email to use for redeeming
   pg_claimdlc: process.env.PG_CLAIMDLC == '1', // prime-gaming: claim in-game content
   pg_timeLeft: Number(process.env.PG_TIMELEFT), // prime-gaming: check time left to claim and skip game if there are more than PG_TIMELEFT days left to claim it
