@@ -103,34 +103,41 @@ TODO: ~~On the first run, the script will guide you through configuration and sa
 
 Available options/variables and their default values:
 
-| Option         | Default      | Description                                                                                                                  |
-|----------------|--------------|------------------------------------------------------------------------------------------------------------------------------|
-| SHOW           | 1            | Show browser if 1. Default for Docker, not shown when running outside.                                                       |
-| WIDTH          | 1280         | Width of the opened browser (and of screen for VNC in Docker).                                                               |
-| HEIGHT         | 1280         | Height of the opened browser (and of screen for VNC in Docker).                                                              |
-| VNC_PASSWORD   |              | VNC password for Docker. No password used by default!                                                                        |
-| NOTIFY         |              | Notification services to use (Pushover, Slack, Telegram...), see below.                                                      |
-| NOTIFY_TITLE   |              | Optional title for notifications, e.g. for Pushover.                                                                         |
-| BROWSER_DIR    | data/browser | Directory for browser profile, e.g. for multiple accounts.                                                                   |
-| TIMEOUT        | 60           | Timeout for any page action. Should be fine even on slow machines.                                                           |
-| LOGIN_TIMEOUT  | 180          | Timeout for login in seconds. Will wait twice (prompt + manual login).                                                       |
-| EMAIL          |              | Default email for any login.                                                                                                 |
-| PASSWORD       |              | Default password for any login.                                                                                              |
-| EG_EMAIL       |              | Epic Games email for login. Overrides EMAIL.                                                                                 |
-| EG_PASSWORD    |              | Epic Games password for login. Overrides PASSWORD.                                                                           |
-| EG_OTPKEY      |              | Epic Games MFA OTP key.                                                                                                      |
-| EG_PARENTALPIN |              | Epic Games Parental Controls PIN.                                                                                            |
-| PG_EMAIL       |              | Prime Gaming email for login. Overrides EMAIL.                                                                               |
-| PG_PASSWORD    |              | Prime Gaming password for login. Overrides PASSWORD.                                                                         |
-| PG_OTPKEY      |              | Prime Gaming MFA OTP key.                                                                                                    |
-| PG_REDEEM      | 0            | Prime Gaming: try to redeem keys on external stores ([experimental](https://github.com/vogler/free-games-claimer/issues/5)). |
-| PG_CLAIMDLC    | 0            | Prime Gaming: try to claim DLCs ([experimental](https://github.com/vogler/free-games-claimer/issues/55)).                    |
-| GOG_EMAIL      |              | GOG email for login. Overrides EMAIL.                                                                                        |
-| GOG_PASSWORD   |              | GOG password for login. Overrides PASSWORD.                                                                                  |
-| GOG_NEWSLETTER | 1            | Do not unsubscribe from newsletter after claiming a game if 1.                                                               |
-| STEAM_USERNAME |              | Steam username for login.                                                                                                    |
-| STEAM_PASSWORD |              | Steam password for login. Overrides PASSWORD.                                                                                |
-| LG_EMAIL       |              | Legacy Games: email to use for redeeming (if not set, defaults to PG_EMAIL).                                                 |
+| Option              | Default      | Description                                                                                                                  |
+|---------------------|--------------|------------------------------------------------------------------------------------------------------------------------------|
+| SHOW                | 1            | Show browser if 1. Default for Docker, not shown when running outside.                                                       |
+| WIDTH               | 1280         | Width of the opened browser (and of screen for VNC in Docker).                                                               |
+| HEIGHT              | 1280         | Height of the opened browser (and of screen for VNC in Docker).                                                              |
+| VNC_PASSWORD        |              | VNC password for Docker. No password used by default!                                                                        |
+| NOTIFY              |              | Notification services to use (Pushover, Slack, Telegram...), see below.                                                      |
+| NOTIFY_TITLE        |              | Optional title for notifications, e.g. for Pushover.                                                                         |
+| BROWSER_DIR         | data/browser | Directory for browser profile, e.g. for multiple accounts.                                                                   |
+| TIMEOUT             | 60           | Timeout for any page action. Should be fine even on slow machines.                                                           |
+| LOGIN_TIMEOUT       | 180          | Timeout for login in seconds. Will wait twice (prompt + manual login).                                                       |
+| EMAIL               |              | Default email for any login.                                                                                                 |
+| PASSWORD            |              | Default password for any login.                                                                                              |
+| EG_EMAIL            |              | Epic Games email for login. Overrides EMAIL.                                                                                 |
+| EG_PASSWORD         |              | Epic Games password for login. Overrides PASSWORD.                                                                           |
+| EG_OTPKEY           |              | Epic Games MFA OTP key.                                                                                                      |
+| EG_PARENTALPIN      |              | Epic Games Parental Controls PIN.                                                                                            |
+| PG_EMAIL            |              | Prime Gaming email for login. Overrides EMAIL.                                                                               |
+| PG_PASSWORD         |              | Prime Gaming password for login. Overrides PASSWORD.                                                                         |
+| PG_OTPKEY           |              | Prime Gaming MFA OTP key.                                                                                                    |
+| PG_REDEEM           | 0            | Prime Gaming: try to redeem keys on external stores ([experimental](https://github.com/vogler/free-games-claimer/issues/5)). |
+| PG_CLAIMDLC         | 0            | Prime Gaming: try to claim DLCs ([experimental](https://github.com/vogler/free-games-claimer/issues/55)).                    |
+| GOG_EMAIL           |              | GOG email for login. Overrides EMAIL.                                                                                        |
+| GOG_PASSWORD        |              | GOG password for login. Overrides PASSWORD.                                                                                  |
+| GOG_NEWSLETTER      | 1            | Do not unsubscribe from newsletter after claiming a game if 1.                                                               |
+| STEAM_USERNAME      |              | Steam username for login.                                                                                                    |
+| STEAM_PASSWORD      |              | Steam password for login. Overrides PASSWORD.                                                                                |
+| PS_EMAIL            |              | PlayStation email for login. Overrides EMAIL.                                                                                |
+| PS_PASSWORD         |              | PlayStation password for login. Overrides PASSWORD.                                                                          |
+| PS_OTPKEY           |              | PlayStation MFA OTP key.                                                                                                     |
+| PS_LOCALE           | en-us        | Configurable locale to use the store. Examples are en-us, en-gb, de-at, ...                                                  |
+| PS_PLUS_GAMES       | 0            | Claim monthly ps plus games. Requires PS Plus Essential or higher subscription.                                              |
+| PS_GAME_CATALOG     | 0            | Currently not implemented! Claim over 400 game catalog games. Requires PS Extra or higher.                                   |
+| PS_CLASSICS_CATALOG | 0            | Currently not implemented! Requires PS Extra or higher.                                                                      |
+| LG_EMAIL            |              | Legacy Games: email to use for redeeming (if not set, defaults to PG_EMAIL).                                                 |
 
 See `src/config.js` for all options.
 
@@ -166,9 +173,9 @@ To get the OTP key, it is easiest to follow the store's guide for adding an auth
 - **Epic Games**: visit [password & security](https://www.epicgames.com/account/password), enable 'third-party authenticator app', copy the 'Manual Entry Key' and use it to set `EG_OTPKEY`.
 - **Prime Gaming**: visit Amazon 'Your Account › Login & security', 2-step verification › Manage › Add new app › Can't scan the barcode, copy the bold key and use it to set `PG_OTPKEY`
 - **GOG**: only offers OTP via email
-<!-- - **Xbox**: visit [additional security](https://account.live.com/proofs/manage/additional) > Add a new way to sign in or verify > Use an app > Set up a different Authenticator app > I can't scan the bar code > copy the bold key and use it to set `XBOX_OTPKEY` -->
-
+- **PlayStation**: visit [account settings](https://id.sonyentertainmentnetwork.com/id/management_ca/?smcid=pdc%3Aen-us%3Aweb-toolbar-account%3Aaccount%20settings) > Security > 'edit' 2-Step Verification > Authenticator App > copy the key and use it to set `PS_OTPKEY`. Note: If you have SMS or another auth setup you need to switch to an Authenticator App like Duo.
 Beware that storing passwords and OTP keys as clear text may be a security risk. Use a unique/generated password! TODO: maybe at least offer to base64 encode for storage.
+<!-- - **Xbox**: visit [additional security](https://account.live.com/proofs/manage/additional) > Add a new way to sign in or verify > Use an app > Set up a different Authenticator app > I can't scan the bar code > copy the bold key and use it to set `XBOX_OTPKEY` -->
 
 ### Epic Games Store
 
@@ -186,6 +193,9 @@ Claiming the Amazon Games works out-of-the-box, however, for games on external s
   Keys and URLs are printed to the console, included in notifications and saved in `data/prime-gaming.json`. A screenshot of the page with the key is also saved to `data/screenshots`.
   [TODO](https://github.com/vogler/free-games-claimer/issues/5): ~~redeem keys on external stores.~~
 
+### PlayStation
+Run `node playstation` (locally or in Docker).
+
 <!-- ### Xbox Games With Gold -->
 <!-- Run `node xbox` (locally or in docker). -->
 
@@ -197,6 +207,7 @@ Epic Games usually has two free games _every week_, before Christmas every day.
 Prime Gaming has new games _every month_ or more often during Prime days.
 GOG usually has one new game every couples of weeks.
 Unreal Engine has new assets to claim _every first Tuesday of a month_.
+PlayStation releases 2-3 new games on a monthly basis for PlayStation Plus Essential.
 <!-- Xbox usually has two games *every month*. -->
 
 It is safe to run the scripts every day.

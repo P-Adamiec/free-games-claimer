@@ -46,6 +46,14 @@ export const cfg = {
   // auth Steam
   steam_username: process.env.STEAM_USERNAME,
   steam_password: process.env.STEAM_PASSWORD || process.env.PASSWORD,
+  // playstation
+  ps_email: process.env.PS_EMAIL || process.env.EMAIL,
+  ps_password: process.env.PS_PASSWORD || process.env.PASSWORD,
+  ps_otpkey: process.env.PS_OTPKEY, 
+  ps_locale: process.env.PS_LOCALE || "en-us",
+  ps_plus_games: process.env.PS_PLUS_GAMES == '1',
+  ps_game_catalog: process.env.PS_GAME_CATALOG == '1',
+  ps_classics_catalog: process.env.PS_CLASSICS_CATALOG == '1',
   // auth AliExpress
   ae_email: process.env.AE_EMAIL || process.env.EMAIL,
   ae_password: process.env.AE_PASSWORD || process.env.PASSWORD,
