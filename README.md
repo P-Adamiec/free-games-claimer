@@ -1,3 +1,9 @@
+> [!WARNING]
+> **DEPRECATION NOTICE: Project has moved!**
+> This JavaScript fork is no longer maintained and may contain bugs due to a lack of updates. 
+> For the actively maintained and updated version, please check out the new Python project: 
+> 👉 **[Free-Games-Claimer-Remaster](https://github.com/P-Adamiec/Free-Games-Claimer-Remaster)**
+
 <p align="center">
 <img alt="logo-free-games-claimer" src="https://user-images.githubusercontent.com/493741/214588518-a4c89998-127e-4a8c-9b1e-ee4a9d075715.png" />
 </p>
